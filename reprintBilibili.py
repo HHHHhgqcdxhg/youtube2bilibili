@@ -19,7 +19,6 @@ with open(configFilePath, "r", encoding="utf8") as f:
 config["biliCookie"] += ";"
 
 
-
 class Utils:
     global print
     oriWrite = print
@@ -29,15 +28,17 @@ class Utils:
     QQNoticeGroup = config["QQNoticeGroup"]
 
     @classmethod
-    def timeWrite(cls,*args):
+    def timeWrite(cls, *args):
         datetimeString = "[" + datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S") + "]"
         cls.oriWrite(datetimeString, *args)
 
     @classmethod
-    def notice(cls,message):
+    def notice(cls, message):
         cls.bot.send_group_msg(group_id=cls.QQNoticeGroup, message=message)
 
+
 print = Utils.timeWrite
+
 
 class Re:
     biliJct = re.compile('bili_jct=(.*?);')
@@ -55,8 +56,9 @@ class UploadChunkPara:
         cls.filesize = filesize
         cls.uploadUrl = uploadUrl
 
+
 class VideoInfo:
-    def __init__(self, url, fulltitle, thumbnail, tags: list, description,_filename):
+    def __init__(self, url, fulltitle, thumbnail, tags: list, description, _filename):
         self.url = url
         self.fulltitle = fulltitle
         self.thumbnail = thumbnail
@@ -66,6 +68,7 @@ class VideoInfo:
 
     def __str__(self) -> str:
         return self.__dict__.__str__()
+
 
 class UploadBili():
     _profile = 'ugcupos/yb'
@@ -99,11 +102,11 @@ class UploadBili():
                 cmd = f"""{self._config["youtubeDlPath"]} -s -j {url}"""
                 resStr: str = os.popen(cmd).read()
                 resDict = json.loads(resStr, encoding="utf8")
-                videoInfo = VideoInfo(url, resDict["fulltitle"], resDict["thumbnail"], resDict["tags"], resDict["description"])
+                videoInfo = VideoInfo(url, resDict["fulltitle"], resDict["thumbnail"], resDict["tags"],
+                                      resDict["description"])
                 return videoInfo
             except Exception as e:
                 continue
-
 
     def _downloadVideo(self, url, toPath):
         if (os.path.exists(toPath)):
@@ -366,6 +369,7 @@ class UploadBili():
 
         self.upload(videoPath, videoInfo.fulltitle, 172, videoInfo.tags, videoInfo.description, url, coverPath)
 
+
 class DownloadY2b():
 
     @staticmethod
@@ -373,11 +377,12 @@ class DownloadY2b():
         cmd = f"""{config["youtubeDlPath"]} -s -j {url}"""
         resStr: str = os.popen(cmd).read()
         resDict = json.loads(resStr, encoding="utf8")
-        v = VideoInfo(url, resDict["fulltitle"], resDict["thumbnail"], resDict["tags"], resDict["description"],resDict["_filename"])
+        v = VideoInfo(url, resDict["fulltitle"], resDict["thumbnail"], resDict["tags"], resDict["description"],
+                      resDict["_filename"])
         return v
 
     @staticmethod
-    def downloadVideo(url,toPath):
+    def downloadVideo(url, toPath):
         if (os.path.exists(toPath)):
             os.remove(toPath)
         cmd = f"""{config["youtubeDlPath"]} -o {toPath} {url}"""
@@ -385,30 +390,43 @@ class DownloadY2b():
         return toPath
 
     @staticmethod
-    def downloadCover(url,saveDir):
+    def downloadCover(url, saveDir):
         fileName = os.path.split(url)[-1]
-        savePath = os.path.join(saveDir,fileName)
+        savePath = os.path.join(saveDir, fileName)
         res = requests.get(url)
         content = res.content
-        with open(savePath,"wb") as f:
+        with open(savePath, "wb") as f:
             f.write(content)
         return savePath
 
-def handdleNewY2bVideo(url):
+
+def doCallback(callBackData):
+    pass
+
+
+def handdleNewY2bVideo(url, callBack=doCallback):
     videoInfo = DownloadY2b.getVideoInfo(url)
     print(videoInfo)
-    videoPath = os.path.join(config["tmpVideoPath"],videoInfo._filename)
-    videoPath = DownloadY2b.downloadVideo(url,videoPath)
-    coverPath = DownloadY2b.downloadCover(videoInfo.thumbnail,config["tmpCoverPath"])
+    videoPath = os.path.join(config["tmpVideoPath"], videoInfo._filename)
+    videoPath = DownloadY2b.downloadVideo(url, videoPath)
+    coverPath = DownloadY2b.downloadCover(videoInfo.thumbnail, config["tmpCoverPath"])
     uploadBili = UploadBili()
+    uploadedInfo = uploadBili.upload(filepath=videoPath, title=videoInfo.fulltitle, tid=172, tag=videoInfo.tags[:10],
+                                     desc=videoInfo.description, source=url, cover_path=coverPath)
 
-    uploadBili.upload(filepath=videoPath,title=videoInfo.fulltitle,tid=172,tag=videoInfo.tags[:10],desc=videoInfo.description,source=url,cover_path=coverPath)
+    if callBack:
+        callBackData = {"videoInfo": videoInfo, "uploadedInfo": uploadedInfo}
+        callBack(callBackData)
+
+    return callBackData
+
 
 if __name__ == '__main__':
-    y2b = UploadBili()
+    # y2b = UploadBili()
     # y2b.banyunFromY("https://youtu.be/ziOk4JpRy-s")
     # chunkNo = y2b.splitVideoChunk("J:\\test\\tmp.flv")
     # print(chunkNo)
     # res = y2b.upload(r"J:\test\tmp.flv", "稿件标题是八个字", 172, ["碧蓝航线"], "详细描述七个字", "youtu.be/adadfsi6Y", r"J:\test\tmp.png","")
     # print(res)
-    handdleNewY2bVideo("https://www.youtube.com/watch?v=9kiZMC3yk3Y")
+    # handdleNewY2bVideo("https://www.youtube.com/watch?v=9kiZMC3yk3Y")
+    print(type(doCallback))
