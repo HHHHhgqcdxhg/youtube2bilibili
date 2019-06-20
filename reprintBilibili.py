@@ -93,12 +93,17 @@ class UploadBili():
         return session
 
     def _getRawInfo(self, url: str):
-        print("get video info")
-        cmd = f"""{self._config["youtubeDlPath"]} -s -j {url}"""
-        resStr: str = os.popen(cmd).read()
-        resDict = json.loads(resStr, encoding="utf8")
-        videoInfo = VideoInfo(url, resDict["fulltitle"], resDict["thumbnail"], resDict["tags"], resDict["description"])
-        return videoInfo
+        for i in range(config["MAX_RETRYS"]):
+            try:
+                print("get video info")
+                cmd = f"""{self._config["youtubeDlPath"]} -s -j {url}"""
+                resStr: str = os.popen(cmd).read()
+                resDict = json.loads(resStr, encoding="utf8")
+                videoInfo = VideoInfo(url, resDict["fulltitle"], resDict["thumbnail"], resDict["tags"], resDict["description"])
+                return videoInfo
+            except Exception as e:
+                continue
+
 
     def _downloadVideo(self, url, toPath):
         if (os.path.exists(toPath)):
