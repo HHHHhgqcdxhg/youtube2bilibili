@@ -4,7 +4,7 @@
 ```js
 {
     "youtubeDlPath": "youtube-dl",
-    "tmpVideoPath": "J:\\tmp.flv",
+    "tmpVideoPath": "J:\\",
     "tmpCoverPath": "J:\\",
     "cqApiRoot": "http://127.0.0.1:8000/",
     "QQNoticeGroup": 119277816,
