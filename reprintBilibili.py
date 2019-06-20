@@ -11,19 +11,33 @@ import requests
 from cqhttp import CQHttp
 from requests.adapters import HTTPAdapter
 
-oriWrite = print
-
-
-def timeWrite(*args):
-    datetimeString = "[" + datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S") + "]"
-    oriWrite(datetimeString, *args)
-
-
-print = timeWrite
-
-pwd = os.path.dirname(__name__)
+pwd = os.path.dirname(__file__)
 configFilePath = os.path.join(pwd, "config.json")
 
+with open(configFilePath, "r", encoding="utf8") as f:
+    config = json.load(f)
+config["biliCookie"] += ";"
+
+
+
+class Utils:
+    global print
+    oriWrite = print
+
+    bot = CQHttp(api_root=config["cqApiRoot"])
+
+    QQNoticeGroup = config["QQNoticeGroup"]
+
+    @classmethod
+    def timeWrite(cls,*args):
+        datetimeString = "[" + datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S") + "]"
+        cls.oriWrite(datetimeString, *args)
+
+    @classmethod
+    def notice(cls,message):
+        cls.bot.send_group_msg(group_id=cls.QQNoticeGroup, message=message)
+
+print = Utils.timeWrite
 
 class Re:
     biliJct = re.compile('bili_jct=(.*?);')
@@ -41,7 +55,6 @@ class UploadChunkPara:
         cls.filesize = filesize
         cls.uploadUrl = uploadUrl
 
-
 class VideoInfo:
     def __init__(self, url, fulltitle, thumbnail, tags: list, description,_filename):
         self.url = url
@@ -54,12 +67,6 @@ class VideoInfo:
     def __str__(self) -> str:
         return self.__dict__.__str__()
 
-
-with open(configFilePath, "r", encoding="utf8") as f:
-    config = json.load(f)
-config["biliCookie"] += ";"
-
-
 class UploadBili():
     _profile = 'ugcupos/yb'
     _cdn = 'ws'
@@ -68,12 +75,7 @@ class UploadBili():
     def __init__(self):
         self._config = config
         self._initPara()
-        self._initBot()
         self._session = self._initSession()
-
-    def _initBot(self):
-        self._bot = CQHttp(api_root=self._config["cqApiRoot"])
-        self._QQNoticeGroup = self._config["QQNoticeGroup"]
 
     def _initPara(self):
         self._MAX_RETRYS = self._config["MAX_RETRYS"]
@@ -204,8 +206,7 @@ class UploadBili():
         #     response = upload_session.put(upload_url, params=params, data=blob, timeout=1200)
         #     print(f'UPLOAD CHUNK {chunk + 1}/{total_chunks}')
         #     if chunk / total_chunks >= progress:
-        #         # self._bot.send_group_msg(group_id=self._QQNoticeGroup,
-        #         #                          message=f"上传进度超过：{progress}|{chunk + 1}/{total_chunks}")
+        #         Utils.notice(message=f"上传进度超过：{progress}|{chunk + 1}/{total_chunks}")
         #         progress += 0.05
         #
         #     parts_info['parts'].append({
@@ -226,7 +227,7 @@ class UploadBili():
         response = upload_session.post(upload_url, params=params, data=parts_info)
         # print('UPLOAD RESULT')
         # print(f'UPLOAD INFO: {upload_info}')
-        self._bot.send_group_msg(group_id=self._QQNoticeGroup, message="上传视频完成")
+        Utils.notice(message="上传视频完成")
         return upload_info
 
     def _cover_up(self, image_path):
@@ -280,7 +281,7 @@ class UploadBili():
             return
         # 获取图片链接
         cover_url = self._cover_up(cover_path) if cover_path else self._cover_default(upload_info["bili_filename"], 20)
-        # self._bot.send_group_msg(group_id=self._QQNoticeGroup, message="获取封面完成")
+        # Utils.notice(message="获取封面完成")
         # 版权判断, 转载无版权
         copyright = 2 if source else 1
         # tag设置
@@ -310,7 +311,7 @@ class UploadBili():
         response = self._session.post(url, json=params)
         print('SET VIDEO INFO')
         SuccessData = response.json()
-        self._bot.send_group_msg(group_id=self._QQNoticeGroup, message=f"上传工作全部完成{SuccessData}")
+        Utils.notice(message=f"上传工作全部完成{SuccessData}")
         return SuccessData
 
     # def splitVideoChunk(self, videoPath)->"int,chunkCounts":
