@@ -43,12 +43,13 @@ class UploadChunkPara:
 
 
 class VideoInfo:
-    def __init__(self, url, fulltitle, thumbnail, tags: list, description):
+    def __init__(self, url, fulltitle, thumbnail, tags: list, description,_filename):
         self.url = url
         self.fulltitle = fulltitle
         self.thumbnail = thumbnail
         self.tags = tags
         self.description = description
+        self._filename = _filename
 
     def __str__(self) -> str:
         return self.__dict__.__str__()
@@ -120,8 +121,15 @@ class UploadBili():
     def _uploadVideo(self, filepath):
         """执行上传文件操作"""
         if not os.path.isfile(filepath):
-            print(f'FILE NOT EXISTS: {filepath}')
-            return
+            filePathPart = os.path.split(filepath)
+            videoFileName = ".".join(filePathPart[-1].split(".")[:-1])
+            for fileName in os.listdir(filePathPart[0]):
+                if ".".join(fileName.split(".")[:-1]) == videoFileName:
+                    filepath = os.path.join(filePathPart[0], fileName)
+                    break
+            else:
+                print(f'FILE NOT EXISTS: {filepath}')
+                return
 
         filename = os.path.basename(filepath)
         filesize = os.path.getsize(filepath)
@@ -338,6 +346,7 @@ class UploadBili():
             'end': offset + len(blob),
             'total': self._uploadChunkPara.filesize,
         }
+        # print(params)
         response = self._uploadChunkPara.upload_session.put(self._uploadChunkPara.uploadUrl, params=params, data=blob,
                                                             timeout=1200)
         print(f'    chunk {chunkNo} uploaded')
@@ -351,17 +360,6 @@ class UploadBili():
 
         self.upload(videoPath, videoInfo.fulltitle, 172, videoInfo.tags, videoInfo.description, url, coverPath)
 
-class VideoInfo:
-    def __init__(self, url, fulltitle, thumbnail, tags: list, description):
-        self.url = url
-        self.fulltitle = fulltitle
-        self.thumbnail = thumbnail
-        self.tags = tags
-        self.description = description
-
-    def __str__(self):
-        return self.__dict__.__str__()
-
 class DownloadY2b():
 
     @staticmethod
@@ -369,7 +367,7 @@ class DownloadY2b():
         cmd = f"""{config["youtubeDlPath"]} -s -j {url}"""
         resStr: str = os.popen(cmd).read()
         resDict = json.loads(resStr, encoding="utf8")
-        v = VideoInfo(url, resDict["fulltitle"], resDict["thumbnail"], resDict["tags"], resDict["description"])
+        v = VideoInfo(url, resDict["fulltitle"], resDict["thumbnail"], resDict["tags"], resDict["description"],resDict["_filename"])
         return v
 
     @staticmethod
@@ -393,18 +391,18 @@ class DownloadY2b():
 def handdleNewY2bVideo(url):
     videoInfo = DownloadY2b.getVideoInfo(url)
     print(videoInfo)
-    videoPath = DownloadY2b.downloadVideo(url,config["tmpVideoPath"])
+    videoPath = os.path.join(config["tmpVideoPath"],videoInfo._filename)
+    videoPath = DownloadY2b.downloadVideo(url,videoPath)
     coverPath = DownloadY2b.downloadCover(videoInfo.thumbnail,config["tmpCoverPath"])
     uploadBili = UploadBili()
 
     uploadBili.upload(filepath=videoPath,title=videoInfo.fulltitle,tid=172,tag=videoInfo.tags[:10],desc=videoInfo.description,source=url,cover_path=coverPath)
 
 if __name__ == '__main__':
-    # y2b = UploadBili()
+    y2b = UploadBili()
     # y2b.banyunFromY("https://youtu.be/ziOk4JpRy-s")
     # chunkNo = y2b.splitVideoChunk("J:\\test\\tmp.flv")
     # print(chunkNo)
-    # res = y2b.upload(r"J:\test\tmp.flv", "稿件标题七个字", 172, ["碧蓝航线"], "详细描述七个字", "youtu.be/adadfsi6Y", r"J:\test\tmp.png",
-    #                  "")
+    # res = y2b.upload(r"J:\test\tmp.flv", "稿件标题是八个字", 172, ["碧蓝航线"], "详细描述七个字", "youtu.be/adadfsi6Y", r"J:\test\tmp.png","")
     # print(res)
-    handdleNewY2bVideo("https://youtu.be/ziOk4JpRy-s")
+    handdleNewY2bVideo("https://www.youtube.com/watch?v=9kiZMC3yk3Y")
