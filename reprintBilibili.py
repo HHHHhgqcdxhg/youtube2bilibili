@@ -39,7 +39,6 @@ class Utils:
 
 print = Utils.timeWrite
 
-
 class Re:
     biliJct = re.compile('bili_jct=(.*?);')
     dedeUserID = re.compile('DedeUserID=(.*?);')
@@ -150,7 +149,6 @@ class UploadBili():
         # 本次上传url
         endpoint = 'http:%s/' % upload_info['endpoint']
         upload_url = Re.upos.sub(endpoint, upload_info['upos_uri'])
-        # print(f'UPLOAD URL: {upload_url}')
         # 本次上传session
         upload_session = requests.session()
         upload_session.mount('http://', HTTPAdapter(max_retries=self._MAX_RETRYS))
@@ -159,8 +157,6 @@ class UploadBili():
         # 2.获取本次上传的upload_id
         response = upload_session.post(upload_url + '?uploads&output=json')
         upload_info['upload_id'] = response.json()['upload_id']
-
-        # print(f'UPLOAD INFO: {upload_info}')
 
         # 3.分块上传文件
         total_chunks = math.ceil(filesize * 1.0 / self._CHUNK_SIZE)
@@ -185,8 +181,6 @@ class UploadBili():
             'biz_id': upload_info['biz_id']
         }
         response = upload_session.post(upload_url, params=params, data=parts_info)
-        # print('UPLOAD RESULT')
-        # print(f'UPLOAD INFO: {upload_info}')
         Utils.notice(message="上传视频完成")
         return upload_info
 
@@ -241,7 +235,6 @@ class UploadBili():
             return
         # 获取图片链接
         cover_url = self._cover_up(cover_path) if cover_path else self._cover_default(upload_info["bili_filename"], 20)
-        # Utils.notice(message="获取封面完成")
         # 版权判断, 转载无版权
         copyright = 2 if source else 1
         # tag设置
