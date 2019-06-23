@@ -309,20 +309,6 @@ class UploadBili():
         Utils.notice(message=f"上传工作全部完成{SuccessData}")
         return SuccessData
 
-    # def splitVideoChunk(self, videoPath)->"int,chunkCounts":
-    #     chunkNo = 0
-    #     with open(videoPath, "rb") as fp:
-    #         while True:
-    #             blob = fp.read(self._CHUNK_SIZE)
-    #             if not blob:
-    #                 break
-    #             chunkFilePath = f"{videoPath}_{chunkNo}"
-    #             chunkNo += 1
-    #             with open(chunkFilePath,"wb") as f:
-    #                 f.write(blob)
-    #     chunkCounts = chunkNo
-    #     return chunkCounts
-
     def uploadChunk(self, chunkNo: int):
         print(f"start upload chunk {chunkNo} ... (total {self._uploadChunkPara.total_chunks})")
         chunkNo = chunkNo
