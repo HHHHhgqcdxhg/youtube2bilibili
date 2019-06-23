@@ -39,6 +39,7 @@ class Utils:
 
 print = Utils.timeWrite
 
+
 class Re:
     biliJct = re.compile('bili_jct=(.*?);')
     dedeUserID = re.compile('DedeUserID=(.*?);')
@@ -228,6 +229,7 @@ class UploadBili():
         """
         title = title[:80]
         desc = desc[:233]
+        tag = tag[:10]
 
         # 上传文件, 获取上传信息
         upload_info = self._uploadVideo(filepath)
@@ -296,12 +298,16 @@ class DownloadY2b():
 
     @staticmethod
     def getVideoInfo(url):
-        cmd = f"""{config["youtubeDlPath"]} -s -j {url}"""
-        resStr: str = os.popen(cmd).read()
-        resDict = json.loads(resStr, encoding="utf8")
-        v = VideoInfo(url, resDict["fulltitle"], resDict["thumbnail"], resDict["tags"], resDict["description"],
-                      resDict["_filename"])
-        return v
+        for i in range(config["MAX_RETRYS"]):
+            try:
+                cmd = f"""{config["youtubeDlPath"]} -s -j {url}"""
+                resStr: str = os.popen(cmd).read()
+                resDict = json.loads(resStr, encoding="utf8")
+                v = VideoInfo(url, resDict["fulltitle"], resDict["thumbnail"], resDict["tags"], resDict["description"],
+                              resDict["_filename"])
+                return v
+            except Exception as e:
+                print(str(e))
 
     @staticmethod
     def downloadVideo(url, toPath):
@@ -329,6 +335,7 @@ def doCallback(callBackData):
 def handdleNewY2bVideo(url, callBack=doCallback):
     videoInfo = DownloadY2b.getVideoInfo(url)
     print(videoInfo)
+
     videoPath = os.path.join(config["tmpVideoPath"], videoInfo._filename)
     videoPath = DownloadY2b.downloadVideo(url, videoPath)
     coverPath = DownloadY2b.downloadCover(videoInfo.thumbnail, config["tmpCoverPath"])
@@ -349,5 +356,4 @@ if __name__ == '__main__':
     # print(chunkNo)
     # res = y2b.upload(r"J:\test\tmp.flv", "稿件标题是八个字", 172, ["碧蓝航线"], "详细描述七个字", "youtu.be/adadfsi6Y", r"J:\test\tmp.png","")
     # print(res)
-    # handdleNewY2bVideo("https://www.youtube.com/watch?v=9kiZMC3yk3Y")
-    print(type(doCallback))
+    handdleNewY2bVideo("https://www.youtube.com/watch?v=9kiZMC3yk3Y")
