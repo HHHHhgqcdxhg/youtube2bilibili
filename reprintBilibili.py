@@ -95,19 +95,6 @@ class UploadBili():
         session.headers['Referer'] = f'https://space.bilibili.com/{self._mid}/#!/'
         return session
 
-    def _getRawInfo(self, url: str):
-        for i in range(config["MAX_RETRYS"]):
-            try:
-                print("get video info")
-                cmd = f"""{self._config["youtubeDlPath"]} -s -j {url}"""
-                resStr: str = os.popen(cmd).read()
-                resDict = json.loads(resStr, encoding="utf8")
-                videoInfo = VideoInfo(url, resDict["fulltitle"], resDict["thumbnail"], resDict["tags"],
-                                      resDict["description"])
-                return videoInfo
-            except Exception as e:
-                continue
-
     def _downloadVideo(self, url, toPath):
         if (os.path.exists(toPath)):
             os.remove(toPath)
@@ -360,15 +347,6 @@ class UploadBili():
                                                             timeout=1200)
         print(f'    chunk {chunkNo} uploaded')
 
-    def banyunFromY(self, url):
-        videoInfo = self._getRawInfo(url)
-        print(videoInfo)
-        coverPath = self._downloadCover(videoInfo.thumbnail, self._config["tmpCoverPath"])
-
-        videoPath = self._downloadVideo(url, self._config["tmpVideoPath"])
-
-        self.upload(videoPath, videoInfo.fulltitle, 172, videoInfo.tags, videoInfo.description, url, coverPath)
-
 
 class DownloadY2b():
 
@@ -417,8 +395,7 @@ def handdleNewY2bVideo(url, callBack=doCallback):
     if callBack:
         callBackData = {"videoInfo": videoInfo, "uploadedInfo": uploadedInfo}
         callBack(callBackData)
-
-    return callBackData
+        return callBackData
 
 
 if __name__ == '__main__':
