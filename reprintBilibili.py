@@ -164,10 +164,7 @@ class UploadBili():
 
         # 3.分块上传文件
         total_chunks = math.ceil(filesize * 1.0 / self._CHUNK_SIZE)
-        offset = 0
-        chunk = 0
         parts_info = {'parts': [{'partNumber': i + 1, 'eTag': 'etag'} for i in range(total_chunks)]}
-        progress = 0.05
 
         print("uploading Video...")
 
@@ -178,38 +175,6 @@ class UploadBili():
 
         with futures.ThreadPoolExecutor(max_workers=self._config["maxWorks"]) as executor:
             results = executor.map(self.uploadChunk, chunkNos)
-
-        # with futures.ThreadPoolExecutor(self._config["maxWorks"]) as exe:
-        #     all_task = [exe.submit(self.uploadChunk, (uploadChunkPara)) for uploadChunkPara in uploadChunkParas]
-        #     for future in futures.as_completed(all_task):
-
-        # fp = open(filepath,"rb")
-        # while True:
-        #     blob = fp.read(self._CHUNK_SIZE)
-        #     if not blob:
-        #         break
-        #     params = {
-        #         'partNumber': chunk + 1,
-        #         'uploadId': upload_info['upload_id'],
-        #         'chunk': chunk,
-        #         'chunks': total_chunks,
-        #         'size': len(blob),
-        #         'start': offset,
-        #         'end': offset + len(blob),
-        #         'total': filesize,
-        #     }
-        #     response = upload_session.put(upload_url, params=params, data=blob, timeout=1200)
-        #     print(f'UPLOAD CHUNK {chunk + 1}/{total_chunks}')
-        #     if chunk / total_chunks >= progress:
-        #         Utils.notice(message=f"上传进度超过：{progress}|{chunk + 1}/{total_chunks}")
-        #         progress += 0.05
-        #
-        #     parts_info['parts'].append({
-        #         'partNumber': chunk + 1,
-        #         'eTag': 'etag'
-        #     })
-        #     chunk += 1
-        #     offset += len(blob)
 
         # 4.标记本次上传完成
         params = {
@@ -328,10 +293,10 @@ class UploadBili():
             'end': offset + len(blob),
             'total': self._uploadChunkPara.filesize,
         }
-        # print(params)
         response = self._uploadChunkPara.upload_session.put(self._uploadChunkPara.uploadUrl, params=params, data=blob,
                                                             timeout=1200)
         print(f'    chunk {chunkNo} uploaded')
+        return response
 
 
 class DownloadY2b():
