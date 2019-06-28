@@ -58,13 +58,14 @@ class UploadChunkPara:
 
 
 class VideoInfo:
-    def __init__(self, url, fulltitle, thumbnail, tags: list, description, _filename):
+    def __init__(self, url, fulltitle, thumbnail, tags: list, description, _filename,id):
         self.url = url
         self.fulltitle = fulltitle
         self.thumbnail = thumbnail
         self.tags = tags
         self.description = description
         self._filename = _filename
+        self.id = id
 
     def __str__(self) -> str:
         return self.__dict__.__str__()
@@ -95,12 +96,6 @@ class UploadBili():
         session.headers['Referer'] = f'https://space.bilibili.com/{self._mid}/#!/'
         return session
 
-    def _downloadVideo(self, url, toPath):
-        if (os.path.exists(toPath)):
-            os.remove(toPath)
-        cmd = f"""{self._config["youtubeDlPath"]} -o {toPath} {url}"""
-        os.system(cmd)
-        return toPath
 
     def _downloadCover(self, url, toDirectory):
         print("downloading cover...")
@@ -304,7 +299,7 @@ class DownloadY2b():
                 resStr: str = os.popen(cmd).read()
                 resDict = json.loads(resStr, encoding="utf8")
                 v = VideoInfo(url, resDict["fulltitle"], resDict["thumbnail"], resDict["tags"], resDict["description"],
-                              resDict["_filename"])
+                              resDict["_filename"],resDict["id"])
                 return v
             except Exception as e:
                 print(str(e))
@@ -327,6 +322,29 @@ class DownloadY2b():
             f.write(content)
         return savePath
 
+    @staticmethod
+    def prepareVideoPath(tmpDir,videoInfo:VideoInfo):
+        videoId = videoInfo.id
+        findExist = DownloadY2b.findFile(tmpDir,videoId)
+
+        if findExist:
+            if(os.path.isfile(findExist)):
+                os.remove(findExist)
+            elif os.path.isdir(findExist):
+                os.rmdir(findExist)
+
+        # 这里的toPath是不含文件后缀的path
+        toPath = os.path.join(tmpDir,videoId)
+        return toPath
+
+    @staticmethod
+    def findFile(path,videoId):
+        files = os.listdir(path)
+        for file in files:
+            fileName = file.split(".")[0]
+            if videoId == fileName:
+                return os.path.join(path,file)
+        return False
 
 def doCallback(callBackData):
     pass
@@ -336,13 +354,17 @@ def handdleNewY2bVideo(url, callBack=doCallback):
     videoInfo = DownloadY2b.getVideoInfo(url)
     print(videoInfo)
 
-    videoPath = os.path.join(config["tmpVideoPath"], videoInfo._filename)
-    videoPath = DownloadY2b.downloadVideo(url, videoPath)
+    videoPathWithoutExt = DownloadY2b.prepareVideoPath(config["tmpVideoPath"],videoInfo)
+    videoPathWithoutExt = DownloadY2b.downloadVideo(url, videoPathWithoutExt)
+    videoPathWithExt = DownloadY2b.findFile(config["tmpVideoPath"],videoInfo.id)
     coverPath = DownloadY2b.downloadCover(videoInfo.thumbnail, config["tmpCoverPath"])
     uploadBili = UploadBili()
-    uploadedInfo = uploadBili.upload(filepath=videoPath, title=videoInfo.fulltitle, tid=172, tag=videoInfo.tags[:10],
+    print(videoPathWithExt)
+
+    uploadedInfo = uploadBili.upload(filepath=videoPathWithExt, title=videoInfo.fulltitle, tid=172, tag=videoInfo.tags[:10],
                                      desc=videoInfo.description, source=url, cover_path=coverPath)
 
+    os.remove(videoPathWithExt)
     if callBack:
         callBackData = {"videoInfo": videoInfo, "uploadedInfo": uploadedInfo}
         callBack(callBackData)
